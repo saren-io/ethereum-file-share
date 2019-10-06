@@ -15,7 +15,8 @@ class App extends Component {
             account: '',
             buffer: null,
             contract: null,
-            fileHash: "QmPpNuwSi9ctTHTafxkFQ5tGASfRqmmxhgdiYbbUqNeeWD"
+            fileHash: "QmPpNuwSi9ctTHTafxkFQ5tGASfRqmmxhgdiYbbUqNeeWD",
+            fileStatus: "Not Uploaded"
         }
     }
 
@@ -58,6 +59,7 @@ class App extends Component {
     captureFile = (e) => {
         e.preventDefault();
         console.log("file captured...");
+        this.setState({fileStatus:"File Captured"});
 
         //Process file for ipfs
         let file = e.target.files[0];
@@ -73,20 +75,23 @@ class App extends Component {
     onSubmit = (e) => {
         e.preventDefault();
         console.log("Submitting form...");
+        this.setState({fileStatus:"Uploading File"});
 
         //Add file to ipfs
         ipfs.add(this.state.buffer, (err, result) => {
-            const fileHash = result[0].hash;
-            this.setState({fileHash});
 
             if (err) {
                 console.log(err);
+                this.setState({fileStatus:err.toString()});
                 return
             }
+            const hash = result[0].hash;
 
             // Store file on Blockchain
-            this.state.contract.methods.set(fileHash).send({from: this.state.account}).then((r) => {
-                this.setState({fileHash});
+            this.state.contract.methods.set(hash).send({from: this.state.account}).on("confirmation", (r) => {
+                this.setState({fileHash: hash});
+                this.setState({fileStatus:"File Uploaded Successfully"});
+                console.log("File uploaded successfully...");
             });
         });
     };
@@ -97,37 +102,39 @@ class App extends Component {
                 <nav className="navbar navbar-dark fixed-top bg-dark flex-md-nowrap p-0 shadow">
                     <a
                         className="navbar-brand col-sm-3 col-md-2 mr-0"
-                        href="http://www.dappuniversity.com/bootcamp"
+                        href="http://www.jaykch.com/"
                         target="_blank"
                         rel="noopener noreferrer"
                     >
-                        Jay hates solidity
+                        Ethereum IPFS Client
                     </a>
                     <ul className="navbar-nav px-3">
                         <li className="nav-item text-nowrap d-none d-sm-none d-sm-block">
-                            <small className="text-white"><strong>Account:</strong> {this.state.account}</small>
+                            <small className="text-white"><strong>Account
+                                Connected:</strong> {this.state.account.length > 0 ? this.state.account : "Not Connected!"}
+                            </small>
                         </li>
                     </ul>
+                    <span className="nav-item text-nowrap">
+                        <small className="text-white"><strong> File Status:</strong> {this.state.fileStatus}&nbsp;&nbsp;</small>
+                    </span>
                 </nav>
                 <div className="container-fluid mt-5">
                     <div className="row">
                         <main role="main" className="col-lg-12 d-flex text-center">
                             <div className="content mr-auto ml-auto">
-                                <a
-                                    href="http://www.dappuniversity.com/bootcamp"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                >
-                                    <br/>
-                                    <img
-                                        src={'https://ipfs.infura.io/ipfs/' + this.state.fileHash} width="300px"/>
-                                </a>
+                                <br/>
+                                <img src={'https://ipfs.infura.io/ipfs/' + this.state.fileHash} width="400px"/>
                                 <br/>
                                 <br/>
-                                <h2>Change image</h2>
+                                <h2>Change Image</h2>
                                 <form onSubmit={this.onSubmit}>
-                                    <input type="file" onChange={this.captureFile}/>
-                                    <input type="submit"/>
+                                    <input type="file" onChange={this.captureFile} className="chose-button"/>
+                                    <label className="premium-button">
+                                        <input type="file" onChange={this.captureFile}/>
+                                        Chose File
+                                    </label>
+                                    <input type="submit" className="premium-button"/>
                                 </form>
                             </div>
                         </main>
